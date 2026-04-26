@@ -12,7 +12,7 @@
 > - [libftTester](https://github.com/Tripouille/libftTester)
 
 ---
-
+Give it a like if it helped you.
 A functional tester for the **libft** project at 42 (subject v19.2).
 Includes **1036 functional tests** + **automated structure, norm, and code quality checks**.
 
