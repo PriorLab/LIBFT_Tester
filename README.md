@@ -1,4 +1,4 @@
-# libft Mega Tester
+# libft Tester
 
 > ⚠️ **DISCLAIMER** ⚠️
 >
