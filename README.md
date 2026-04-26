@@ -1,8 +1,9 @@
-# libft Mega Tester
+# libft Tester
 
 > ⚠️ **DISCLAIMER** ⚠️
 >
 > **This tester was generated with the help of AI and is provided only as a guide.**
+>Give it a like if it helped you.
 > Errors and false positives may occur. Always verify results manually and cross-check
 > with other testers — they may be more complete or more accurate.
 > **Do not rely solely on this tester to validate a libft submission as new updates and furthers tests can be made.**
@@ -12,7 +13,6 @@
 > - [libftTester](https://github.com/Tripouille/libftTester)
 
 ---
-Give it a like if it helped you.
 A functional tester for the **libft** project at 42 (subject v19.2).
 Includes **1036 functional tests** + **automated structure, norm, and code quality checks**.
 
@@ -31,7 +31,7 @@ No Python, no extra dependencies.
 │   ├── ft_*.c          ← Part 1 + Part 2
 │   └── ft_lst*.c       ← Part 3 (mandatory)
 │
-└── libft_tester_v2/    ← this tester
+└── libft_tester/    ← this tester (basically git clone it next to the past libft)
     ├── Makefile
     ├── check_manual.sh
     ├── README.md
@@ -47,7 +47,18 @@ No Python, no extra dependencies.
 ```
 
 ---
+---
 
+## Commands
+After entering in the libft_tester run the commands
+
+| Command | Description |
+|---|---|
+| `make` | Compiles libft + runs **1036 functional tests** |
+| `make leaks` | Same as `make` but with **valgrind** (detects memory leaks) |
+| `make check` | **13 automated checks** — structure, static helpers, forbidden functions, README |
+| `make clean` | Removes the tester binary |
+| `make re` | Full clean rebuild |
 ## Installation
 
 ```bash
@@ -69,18 +80,6 @@ If your Libft has a different name or location:
 ```bash
 make LIBFT_DIR=/absolute/path/to/libft
 ```
-
----
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `make` | Compiles libft + runs **1036 functional tests** |
-| `make leaks` | Same as `make` but with **valgrind** (detects memory leaks) |
-| `make check` | **13 automated checks** — structure, static helpers, forbidden functions, README |
-| `make clean` | Removes the tester binary |
-| `make re` | Full clean rebuild |
 
 ---
 
