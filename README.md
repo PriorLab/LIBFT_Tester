@@ -12,7 +12,7 @@
 > - [libftTester](https://github.com/Tripouille/libftTester)
 
 ---
-
+Like it if it helped you.
 A functional tester for the **libft** project at 42 (subject v19.2).
 Includes **1036 functional tests** + **automated structure, norm, and code quality checks**.
 
@@ -31,7 +31,7 @@ No Python, no extra dependencies.
 │   ├── ft_*.c          ← Part 1 + Part 2
 │   └── ft_lst*.c       ← Part 3 (mandatory)
 │
-└── libft_tester_v2/    ← this tester
+└── libft_tester/    ← this tester
     ├── Makefile
     ├── check_manual.sh
     ├── README.md
@@ -51,25 +51,17 @@ No Python, no extra dependencies.
 ## Installation
 
 ```bash
-# 1. Go to the folder containing the student's Libft
-cd ~/42
+# 1. Create a past with mkdir or locally to put the students exercise and the tester
 
-# 2. Extract the tester (it becomes a sibling of Libft)
-tar -xzf libft_tester_v2.tar.gz
+# 2. Extract the student exercise(has Libft) with git clone and the tester (they become siblings)
 
 # 3. Confirm the structure
 ls
-# should show: Libft/  libft_tester_v2/
+# should show: Libft/  libft_tester/
 
 # 4. Enter the tester
-cd libft_tester_v2
+cd libft_tester
 ```
-
-If your Libft has a different name or location:
-```bash
-make LIBFT_DIR=/absolute/path/to/libft
-```
-
 ---
 
 ## Commands
@@ -230,7 +222,7 @@ Verifies all sections required by subject v19.2:
 ### `make` output
 ```
 ╔══════════════════════════════════════╗
-║         LIBFT MEGA TESTER           ║
+║         LIBFT TESTER                 ║
 ╚══════════════════════════════════════╝
 
 ── PART 1: Libc functions ──

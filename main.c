@@ -50,7 +50,7 @@ int main(void)
 	setup_signals();
 	printf(BOLD MAGENTA
 		"\n╔══════════════════════════════════════╗\n"
-		"║         LIBFT MEGA TESTER           ║\n"
+		"║         LIBFT TESTER                 ║\n"
 		"╚══════════════════════════════════════╝\n" RESET);
 
 	printf(BOLD YELLOW "\n── PART 1: Libc functions ──\n" RESET);
