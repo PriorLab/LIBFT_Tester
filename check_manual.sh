@@ -28,13 +28,9 @@ hdr()  { echo -e "\n${BOLD}${CYAN}═══════════════�
          echo -e "${BOLD}${CYAN}  $1${RESET}";
          echo -e "${BOLD}${CYAN}══════════════════════════════════════${RESET}"; }
 
-# Strip C comments from a file using gcc preprocessor (available everywhere cc is)
-# Falls back to a simpler sed approach if gcc fails
 strip_comments() {
     local file="$1"
-    # Use gcc to strip comments — works on any system with cc
     gcc -fpreprocessed -dD -E "$file" 2>/dev/null | grep -v "^#" || \
-    # Fallback: crude sed (won't handle multiline /* */ perfectly but catches most cases)
     sed 's|//.*||g; s|/\*[^*]*\*\+\([^/*][^*]*\*\+\)*/||g' "$file"
 }
 
@@ -67,7 +63,7 @@ done
 # ── 2. Makefile rules ─────────────────────────────────────────
 hdr "2. Makefile — mandatory rules"
 
-for rule in all clean fclean re bonus; do
+for rule in all clean fclean re; do
     grep -qE "^$rule\s*:" "$LIBFT/Makefile" \
         && ok "rule '$rule' exists" \
         || ko "rule '$rule' is MISSING"
@@ -75,6 +71,23 @@ done
 grep -qE "^\\\$\(NAME\)\s*:|^NAME\s*:=" "$LIBFT/Makefile" \
     && ok "NAME variable/rule exists" \
     || ko "NAME missing from Makefile"
+
+# bonus rule: check if it exists OR if lst functions are already in SRCS/all
+HAS_BONUS_RULE=0
+grep -qE "^bonus\s*:" "$LIBFT/Makefile" && HAS_BONUS_RULE=1
+
+if [ $HAS_BONUS_RULE -eq 1 ]; then
+    ok "rule 'bonus' exists"
+else
+    # Check if lst functions are compiled in 'all' (included in SRCS)
+    LST_IN_ALL=$(grep -c "ft_lst" "$LIBFT/Makefile" || true)
+    if [ "$LST_IN_ALL" -gt 0 ]; then
+        warn "no 'bonus' rule — but ft_lst* files are in SRCS (compiled with 'all')"
+        warn "acceptable for this subject version, but check with your evaluator"
+    else
+        ko "rule 'bonus' is MISSING and ft_lst* not found in Makefile"
+    fi
+fi
 
 # ── 3. ar vs libtool ─────────────────────────────────────────
 hdr "3. ar vs libtool"
@@ -103,7 +116,6 @@ hdr "5. Active test code (printf/scanf/main outside comments)"
 
 TEST_FOUND=0
 for f in "$LIBFT"/ft_*.c; do
-    # Use gcc to strip comments, then search for test code
     cleaned=$(strip_comments "$f")
     if echo "$cleaned" | grep -qE "\bprintf\b|\bscanf\b|\bputs\b"; then
         ko "$(basename $f): active printf/scanf/puts found"
@@ -114,38 +126,36 @@ for f in "$LIBFT"/ft_*.c; do
         TEST_FOUND=1
     fi
 done
+# Also check libft.h for active main (some students put it there)
+cleaned_h=$(strip_comments "$LIBFT/libft.h" 2>/dev/null)
+if echo "$cleaned_h" | grep -qE "^\s*int\s+main\s*\("; then
+    ko "libft.h: active main() found outside comments"
+    TEST_FOUND=1
+fi
 [ $TEST_FOUND -eq 0 ] && ok "no active test code found"
 
 # ── 6. Global variables ───────────────────────────────────────
 hdr "6. Global variables (FORBIDDEN)"
 
-# Strategy: look for lines that start at column 0 with a C type,
-# end with ';', have no '(' or ')', and are NOT static/extern/typedef/#
-# We use awk to track brace depth and only flag depth==0 declarations
 GLOBAL_FOUND=0
 for f in "$LIBFT"/ft_*.c; do
     cleaned=$(strip_comments "$f")
     result=$(echo "$cleaned" | awk '
         BEGIN { depth = 0 }
         {
-            # Count braces
             for (i = 1; i <= length($0); i++) {
                 c = substr($0, i, 1)
                 if (c == "{") depth++
                 else if (c == "}") depth--
             }
-            # At global scope (depth==0), look for variable declarations
             if (depth == 0) {
                 line = $0
-                # Skip empty, preprocessor, static, extern, typedef
                 if (line ~ /^[[:space:]]*$/) next
                 if (line ~ /^[[:space:]]*#/) next
                 if (line ~ /static/) next
                 if (line ~ /extern/) next
                 if (line ~ /typedef/) next
-                # Must end with ; and have no () (to exclude function decls)
                 if (line ~ /;$/ && line !~ /\(/ && line !~ /\)/) {
-                    # Must start with a C type keyword
                     if (line ~ /^[[:space:]]*(int|char|long|float|double|size_t|unsigned|void\*)/) {
                         print NR ": " line
                     }
@@ -196,14 +206,9 @@ done
 # ── 10. Helper functions are static ──────────────────────────
 hdr "10. Helper functions must be static"
 
-# For each ft_*.c file, look for function definitions that:
-# - start at column 0 (not indented)
-# - are NOT the ft_* function the file is named after
-# - are NOT declared as static
-# We use a simple awk: find lines matching "type name(" at depth 0
 STATIC_ISSUES=0
 for f in "$LIBFT"/ft_*.c; do
-    ft_name=$(basename "$f" .c)   # e.g. ft_split
+    ft_name=$(basename "$f" .c)
     cleaned=$(strip_comments "$f")
     result=$(echo "$cleaned" | awk -v ftname="$ft_name" '
         BEGIN { depth = 0 }
@@ -213,23 +218,17 @@ for f in "$LIBFT"/ft_*.c; do
                 if (c == "{") depth++
                 else if (c == "}") depth--
             }
-            # Function definition: at depth 0 (before the opening brace of the func),
-            # starts with a type, not static, not the main ft_ function
             if (depth == 0) {
                 line = $0
-                # Skip preprocessor, empty, static, extern
                 if (line ~ /^[[:space:]]*#/) next
                 if (line ~ /^[[:space:]]*$/) next
                 if (line ~ /static/) next
                 if (line ~ /extern/) next
                 if (line ~ /typedef/) next
-                # Look for: return_type funcname( pattern at start of line
                 if (match(line, /^[a-zA-Z_][a-zA-Z0-9_ \t\*]+[[:space:]]([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*\(/, arr)) {
                     fname = arr[1]
-                    # Skip the main ft_ function and control flow keywords
                     if (fname == ftname) next
                     if (fname ~ /^(if|while|for|return|sizeof|else)$/) next
-                    # Skip if line ends with ; (declaration, not definition)
                     if (line ~ /;[[:space:]]*$/) next
                     print NR ": " line " — not static"
                 }
@@ -249,7 +248,6 @@ hdr "11. Forbidden external functions"
 
 FORBIDDEN_FOUND=0
 
-# Functions that must use NO external functions
 NO_EXT="ft_isalpha ft_isdigit ft_isalnum ft_isascii ft_isprint \
         ft_toupper ft_tolower ft_strlen ft_memset ft_bzero \
         ft_memcpy ft_memmove ft_strlcpy ft_strlcat ft_strchr \
@@ -260,7 +258,6 @@ for fn in $NO_EXT; do
     f="$LIBFT/${fn}.c"
     [ -f "$f" ] || continue
     cleaned=$(strip_comments "$f")
-    # Look for calls to clearly forbidden functions
     for forbidden in malloc free calloc realloc printf fprintf write read exit; do
         if echo "$cleaned" | grep -qE "\b${forbidden}\s*\("; then
             ko "${fn}.c uses forbidden: ${forbidden}()"
@@ -269,7 +266,6 @@ for fn in $NO_EXT; do
     done
 done
 
-# write-only functions (putchar_fd, putstr_fd, putendl_fd, putnbr_fd)
 WRITE_ONLY="ft_putchar_fd ft_putstr_fd ft_putendl_fd ft_putnbr_fd"
 for fn in $WRITE_ONLY; do
     f="$LIBFT/${fn}.c"
@@ -283,7 +279,6 @@ for fn in $WRITE_ONLY; do
     done
 done
 
-# malloc-only functions — check they don't use write/printf
 MALLOC_ONLY="ft_substr ft_strjoin ft_strtrim ft_split ft_itoa ft_strmapi"
 for fn in $MALLOC_ONLY; do
     f="$LIBFT/${fn}.c"
@@ -314,7 +309,6 @@ else
     ok "README.md found: $(basename $README)"
 
     FIRST=$(head -1 "$README")
-    # First line must be italicized and mention "42 curriculum" and a login
     if echo "$FIRST" | grep -qiE "created.*42|42.*curriculum|42.*project|42.*by"; then
         ok "first line references the 42 curriculum"
     else
@@ -325,31 +319,25 @@ else
     CONTENT=$(cat "$README")
 
     echo "$CONTENT" | grep -qiE "##?\s*Description|Description" \
-        && ok "has 'Description' section" \
-        || ko "missing 'Description' section"
+        && ok "has 'Description' section" || ko "missing 'Description' section"
 
     echo "$CONTENT" | grep -qiE "##?\s*(Instructions|Usage|Compilation|Installation|How to)" \
-        && ok "has 'Instructions'/'Usage' section" \
-        || ko "missing 'Instructions' section"
+        && ok "has 'Instructions'/'Usage' section" || ko "missing 'Instructions' section"
 
     echo "$CONTENT" | grep -qiE "##?\s*(Resources|References|Links|Sources)" \
-        && ok "has 'Resources' section" \
-        || ko "missing 'Resources' section"
+        && ok "has 'Resources' section" || ko "missing 'Resources' section"
 
     echo "$CONTENT" | grep -qiE "\bAI\b|artificial intelligence|ChatGPT|Claude|GPT|Copilot|LLM" \
         && ok "README mentions AI usage (required)" \
         || ko "README must describe how AI was used (or that it was not used)"
 
     echo "$CONTENT" | grep -qiE "libft|library|ft_|functions" \
-        && ok "README describes the library" \
-        || ko "README must include a detailed description of the library"
+        && ok "README describes the library" || ko "README must describe the library"
 
     LINE_COUNT=$(wc -l < "$README")
-    if [ "$LINE_COUNT" -gt 20 ]; then
-        ok "README length looks good ($LINE_COUNT lines)"
-    else
-        warn "README seems short ($LINE_COUNT lines) — subject requires detailed content"
-    fi
+    [ "$LINE_COUNT" -gt 20 ] \
+        && ok "README length looks good ($LINE_COUNT lines)" \
+        || warn "README seems short ($LINE_COUNT lines)"
 fi
 
 # ── 13. Norminette ───────────────────────────────────────────
